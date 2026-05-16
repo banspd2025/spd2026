@@ -406,8 +406,21 @@ var isSaving=false;
 
 // ── GAS bridge ─────────────────────────────────────────────
 function gsLoad(){
+  var loadDone=false;
+
+  // timeout 15 วินาที — ถ้าค้างให้เข้าได้เลย
+  var timer=setTimeout(function(){
+    if(loadDone)return;
+    loadDone=true;
+    document.getElementById('loadMsg').innerHTML=
+      '⚠️ โหลดช้า — <button onclick="forceEnter()" style="background:#d4a017;color:#1a2e1a;border:none;padding:8px 18px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;">เข้าใช้งานได้เลย</button><br><small style="opacity:.7;display:block;margin-top:8px">หรือ Deploy ใหม่ใน Apps Script</small>';
+  },15000);
+
   google.script.run
     .withSuccessHandler(function(data){
+      if(loadDone)return;
+      loadDone=true;
+      clearTimeout(timer);
       if(data){
         DB=data;
         if(!DB.members)DB.members=[];
@@ -419,10 +432,21 @@ function gsLoad(){
       setSyncOk('โหลดข้อมูลสำเร็จ');
     })
     .withFailureHandler(function(e){
-      document.getElementById('loadMsg').textContent='❌ โหลดไม่ได้: '+e.message;
+      if(loadDone)return;
+      loadDone=true;
+      clearTimeout(timer);
+      document.getElementById('loadMsg').innerHTML=
+        '❌ '+e.message+'<br><button onclick="forceEnter()" style="background:#d4a017;color:#1a2e1a;border:none;padding:8px 18px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;margin-top:12px;">เข้าใช้งานได้เลย</button>';
       setSyncErr();
     })
     .loadData();
+}
+
+function forceEnter(){
+  renderAll();
+  document.getElementById('loadingScreen').classList.add('hide');
+  setSyncErr();
+  toast('⚠️ ข้อมูลอาจยังไม่โหลด — กด ซิงค์ เพื่อลองใหม่');
 }
 
 function gsSave(onDone){
